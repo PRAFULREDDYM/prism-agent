@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT | NEON FLUX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #050505;
+            --text: #ffffff;
+            --accent: #8e5864;
+            --blob-color: #8e5864;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            cursor: none; 
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, .font-display { font-family: 'Syne', sans-serif; }
+        .font-mono { font-family: 'Space Grotesk', monospace; }
+
+        /* --- NOISE OVERLAY --- */
+        .noise {
+            position: fixed; inset: 0; pointer-events: none; z-index: 9000; opacity: 0.07;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* --- 1. SKIPER26: BLURRED BLOB --- */
+        #blob-container {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        #blob {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20vmax;
+            height: 20vmax;
+            background: var(--blob-color);
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.4;
+            mix-blend-mode: screen; 
+        }
+
+        /* --- 2. CUSTOM CURSOR --- */
+        #cursor {
+            position: fixed; top: 0; left: 0;
+            width: 20px; height: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            pointer-events: none; z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background-color 0.3s;
+            mix-blend-mode: difference;
+        }
+        .hover-trigger:hover ~ #cursor { transform: translate(-50%, -50%) scale(3); background: white; border-color: transparent; }
+
+        /* --- 3. SKIPER87: SCROLL FADE EFFECT --- */
+        .scroll-fade-y {
+            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none;  /* IE */
+        }
+        .scroll-fade-y::-webkit-scrollbar { display: none; }
+
+        @supports (animation-timeline: scroll()) {
+            @property --ft { syntax: "<length>"; inherits: false; initial-value: 0px; }
+            @property --fb { syntax: "<length>"; inherits: false; initial-value: 40px; }
+
+            .scroll-fade-y {
+                --ft: 0px;
+                --fb: 40px;
+                mask-image: linear-gradient(to bottom, transparent 0, #000 var(--ft), #000 calc(100% - var(--fb)), transparent 100%);
+                animation: fadeTop 1s linear both, fadeBottom 1s linear both;
+                animation-timeline: scroll(self);
+                animation-range: 0% 20%, 80% 100%;
+            }
+            @keyframes fadeTop { from { --ft: 0px; } to { --ft: 40px; } }
+            @keyframes fadeBottom { from { --fb: 40px; } to { --fb: 0px; } }
+        }
+
+        /* --- 4. SKIPER40: MAGNETIC LINK BUTTON --- */
+        .btn-skiper40 {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem 2.5rem;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: transparent;
+            color: white;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            text-transform: uppercase;
+            font-family: 'Space Grotesk', monospace;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            width: 100%; 
+            max-width: 280px; 
+        }
+        
+        .btn-skiper40::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: white;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 0;
+        }
+
+        .btn-skiper40:hover::before { transform: scaleX(1); }
+        .btn-skiper40:hover { color: black; border-color: white; }
+
+        .btn-text { position: relative; z-index: 1; }
+        .btn-icon-container { position: relative; z-index: 1; width: 20px; height: 20px; overflow: hidden; }
+
+        .btn-icon { display: block; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .btn-skiper40:hover .btn-icon { transform: translate(150%, -150%); }
+        .btn-icon-clone {
+            position: absolute; top: 0; left: 0;
+            transform: translate(-150%, 150%);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .btn-skiper40:hover .btn-icon-clone { transform: translate(0, 0); }
+
+        /* --- UTILS --- */
+        .reveal-up { opacity: 0; transform: translateY(50px); }
+        .reveal-stagger { opacity: 0; transform: translateY(30px); }
+        .img-reveal { clip-path: inset(0 100% 0 0); }
+        
+        nav { mix-blend-mode: difference; z-index: 50; }
+        .back-link {
+            font-family: 'Space Grotesk', monospace;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.3s;
+        }
+        .back-link:hover { border-color: white; }
+
+        /* --- HERO IMAGE CONTAINER --- */
+        .hero-img-box {
+            position: relative; /* Normal flow, NOT absolute */
+            width: 100%;
+            /* Professional sizing */
+            max-width: 500px;
+            aspect-ratio: 4 / 5;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 30px 90px rgba(0,0,0,0.6);
+            /* Ensure it stays separate on mobile */
+            margin: 0 auto; 
+        }
+        
+        .hero-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scale(1.0); /* Straight */
+        }
+
+        /* Overlay */
+        .hero-img-box::after {
+            content:'';
+            position:absolute;
+            inset:0;
+            background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
+            pointer-events:none;
+        }
+        /* --- SKIPER89: DRAGGABLE SCROLL PROGRESS WIDGET --- */
+        #scrollWidget {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.18);
+        background: rgba(0,0,0,0.28);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10001;
+        cursor: grab;
+        user-select: none;
+        touch-action: none;
+        }
+
+        #scrollWidget:active {
+        cursor: grabbing;
+        }
+
+        #scrollWidgetPct {
+        position: absolute;
+        top: -8px;
+        left: 50%;
+        transform: translate(-50%, -100%);
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: rgba(255,255,255,0.28);
+        opacity: 0;
+        transition: opacity 180ms ease;
+        pointer-events: none;
+        font-variant-numeric: tabular-nums;
+        }
+
+        #scrollWidget:hover #scrollWidgetPct {
+        opacity: 1;
+        }
+
+        #scrollWidgetSvg {
+        width: 40px;
+        height: 40px;
+        color: rgba(255,255,255,0.85);
+        }
+
+        #scrollWidgetTrack {
+        opacity: 0.25;
+        }
+        /* =========================
+        THEME SYSTEM (DAY/NIGHT)
+        ========================= */
+
+        /* easing used by view-transition CSS */
+        :root {
+        --expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Light theme overrides */
+        html[data-theme="light"] {
+        --bg: #f6f4f2;
+        --text: #0b0b0b;
+        --accent: #8e5864;
+        --blob-color: #8e5864;
+        }
+
+        /* Make common Tailwind text colors readable in light mode (minimal overrides) */
+        html[data-theme="light"] .text-white { color: var(--text) !important; }
+        html[data-theme="light"] .text-gray-400 { color: rgba(0,0,0,0.65) !important; }
+        html[data-theme="light"] .text-gray-300 { color: rgba(0,0,0,0.72) !important; }
+        html[data-theme="light"] .text-gray-500 { color: rgba(0,0,0,0.55) !important; }
+        html[data-theme="light"] .text-gray-600 { color: rgba(0,0,0,0.45) !important; }
+
+        /* Make your “dark sections” become light in day mode */
+        html[data-theme="light"] .bg-\[\#0a0a0a\] { background-color: #f0eeec !important; }
+        html[data-theme="light"] .bg-\[\#080808\] { background-color: #f3f1ef !important; }
+        html[data-theme="light"] .bg-black { background-color: #f3f1ef !important; }
+
+        /* Borders */
+        html[data-theme="light"] .border-white\/10 { border-color: rgba(0,0,0,0.10) !important; }
+        html[data-theme="light"] .border-white\/5 { border-color: rgba(0,0,0,0.08) !important; }
+        html[data-theme="light"] .border-white\/12 { border-color: rgba(0,0,0,0.12) !important; }
+
+        /* Blob + noise tuning for light mode */
+        html[data-theme="light"] #blob { opacity: 0.22; mix-blend-mode: multiply; }
+        html[data-theme="light"] .noise { opacity: 0.05; }
+        html[data-theme="light"] nav { mix-blend-mode: normal; }
+
+        /* =========================
+        THEME TOGGLE BUTTON UI
+        ========================= */
+        #themeToggle {
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.22);
+        background: rgba(0,0,0,0.25);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+        }
+
+        html[data-theme="light"] #themeToggle {
+        border-color: rgba(0,0,0,0.16);
+        background: rgba(255,255,255,0.45);
+        }
+
+        #themeToggle:active { transform: scale(0.95); }
+
+        #themeToggle svg {
+        width: 26px;
+        height: 26px;
+        display: block;
+        }
+
+        /* rotate the icon as state feedback */
+        html[data-theme="dark"] #themeToggleIcon { transform: rotate(0deg); }
+        html[data-theme="light"] #themeToggleIcon { transform: rotate(180deg); }
+        #themeToggleIcon { transition: transform 500ms ease; }
+    </style>
+</head>
+<body>
+
+    <div class="noise"></div>
+    <div id="blob-container"><div id="blob"></div></div>
+    <div id="cursor"></div>
+    <!-- Skiper89 Scroll Progress Widget -->
+    <div id="scrollWidget" aria-label="Scroll progress">
+    <div id="scrollWidgetPct">0%</div>
+
+    <svg id="scrollWidgetSvg" viewBox="0 0 48 48" role="presentation" aria-hidden="true">
+        <circle
+        id="scrollWidgetTrack"
+        cx="24"
+        cy="24"
+        r="18"
+        stroke="currentColor"
+        stroke-width="3"
+        fill="none"
+        />
+        <circle
+        id="scrollWidgetRing"
+        cx="24"
+        cy="24"
+        r="18"
+        stroke="currentColor"
+        stroke-width="3"
+        fill="none"
+        stroke-linecap="round"
+        transform="rotate(-90 24 24)"
+        />
+    </svg>
+    </div>
+    <nav class="fixed top-0 left-0 w-full p-8 flex justify-between items-center text-white">
+        <a href="index.html" class="back-link hover-trigger">← Back to Galaxy</a>
+
+        <div class="flex items-center gap-4">
+            <div class="font-display font-bold">PRAFUL M.</div>
+
+            <!-- Skiper26 Theme Toggle (circle-blur, blur:on, start:center) -->
+            <button id="themeToggle" class="hover-trigger" type="button" aria-label="Toggle theme" aria-pressed="true">
+            <span class="sr-only">Toggle theme</span>
+
+            <!-- simple yin/yang style icon -->
+            <svg id="themeToggleIcon" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g>
+                <path d="M120 67.5C149.25 67.5 172.5 90.75 172.5 120C172.5 149.25 149.25 172.5 120 172.5" fill="white"/>
+                <path d="M120 67.5C90.75 67.5 67.5 90.75 67.5 120C67.5 149.25 90.75 172.5 120 172.5" fill="black"/>
+                </g>
+                <path d="M120 3.75C55.5 3.75 3.75 55.5 3.75 120C3.75 184.5 55.5 236.25 120 236.25C184.5 236.25 236.25 184.5 236.25 120C236.25 55.5 184.5 3.75 120 3.75ZM120 214.5V172.5C90.75 172.5 67.5 149.25 67.5 120C67.5 90.75 90.75 67.5 120 67.5V25.5C172.5 25.5 214.5 67.5 214.5 120C214.5 172.5 172.5 214.5 120 214.5Z" fill="white"/>
+            </svg>
+            </button>
+        </div>
+    </nav>
+
+    <main class="relative z-10 w-full">
+        
+        <header class="min-h-screen flex items-center px-6 md:px-24 pt-32 pb-20">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 w-full items-center">
+                
+                <div class="lg:col-span-7 z-10 order-2 lg:order-1 pl-48" data-speed="0.5">
+                    <div class="flex gap-4 mb-6 text-[#8e5864] font-mono text-sm tracking-widest reveal-up">
+                        <span>2024</span>
+                        <span>/</span>
+                        <span>WEB3</span>
+                    </div>
+                    <h1 class="text-[clamp(50px,9vw,130px)] leading-[0.85] font-black uppercase text-white mix-blend-overlay scramble-load mb-8">
+                        NEON<br>FLUX
+                    </h1>
+                    <p class="text-gray-400 font-mono max-w-md reveal-up text-lg">
+                        A decentralized dashboard that breathes. Visualizing blockchain data through organic particle systems.
+                    </p>
+                </div>
+
+                <div class="lg:col-span-5 order-1 lg:order-2 flex justify-center lg:justify-start lg:items-start h-full">
+                    
+                    <div class="hero-img-box hero-float-anim lg:-mt-32">
+                        <img 
+                            src="https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=1200&q=80"
+                            alt="Project Visual"
+                        >
+                    </div>
+                </div>
+
+            </div>
+        </header>
+
+        <section class="py-24 px-6 md:px-24 bg-transparent relative z-20 border-t border-white/5">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-12">
+                <div class="md:col-span-7" data-speed="0.95">
+                    <span class="font-mono text-[#8e5864] mb-6 block tracking-widest reveal-up">THE CHALLENGE</span>
+                    <h2 class="text-2xl md:text-4xl font-display font-bold mb-8 text-white reveal-up">
+                        Bridging Biology & Syntax
+                    </h2>
+                    <p class="text-lg text-gray-400 font-light leading-relaxed reveal-up">
+                        Nexus Labs required a visual identity that bridged the gap between organic biology and synthetic intelligence. The goal was to create a digital environment that felt "alive" yet precisely engineered.
+                    </p>
+                </div>
+                <div class="md:col-span-4 md:col-start-9 flex flex-col gap-6 reveal-up" data-speed="1.05">
+                    <h3 class="font-mono text-white text-sm tracking-widest border-b border-white/10 pb-4">KEY DELIVERABLES</h3>
+                    <ul class="font-mono text-sm text-gray-300 space-y-4">
+                        <li class="flex items-center gap-3"><span class="w-1.5 h-1.5 bg-[#8e5864] rounded-full"></span> 3D WebGL Visualization</li>
+                        <li class="flex items-center gap-3"><span class="w-1.5 h-1.5 bg-[#8e5864] rounded-full"></span> Design System (Figma)</li>
+                        <li class="flex items-center gap-3"><span class="w-1.5 h-1.5 bg-[#8e5864] rounded-full"></span> React Implementation</li>
+                        <li class="flex items-center gap-3"><span class="w-1.5 h-1.5 bg-[#8e5864] rounded-full"></span> Sound Design</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-24 px-6 md:px-24 bg-[#0a0a0a]">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                <div class="reveal-img-scale" data-speed="1.1">
+                    <div class="relative group">
+                        <div class="absolute -inset-1 bg-gradient-to-r from-[#8e5864] to-purple-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                        <div class="relative bg-black border border-white/10 rounded-lg p-2">
+                                                        <img src="https://images.unsplash.com/photo-1558494949-ef526b0042a0?auto=format&fit=crop&w=1200" 
+                                 class="w-full h-auto rounded opacity-80 group-hover:opacity-100 transition duration-500" 
+                                 alt="System Architecture">
+                        </div>
+                    </div>
+                    <p class="font-mono text-xs text-gray-500 mt-4 text-center">FIG 1.0 SYSTEM ARCHITECTURE</p>
+                </div>
+                <div class="space-y-8 reveal-up" data-speed="0.9">
+                    <span class="font-mono text-[#8e5864] tracking-widest">THE BLUEPRINT</span>
+                    <h3 class="text-3xl font-display font-bold">Scalable Infrastructure</h3>
+                    <p class="text-gray-400 font-mono leading-relaxed">
+                        The architecture was designed for high-frequency data updates. Using WebSocket connections for real-time feeds and a dedicated WebGL rendering pipeline, we achieved 60fps performance on standard devices.
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-24 reveal-img-scale flex flex-col items-center" data-speed="1.02">
+                <img src="https://images.unsplash.com/photo-1614726365203-c029fa853a69?auto=format&fit=crop&w=2000" 
+                     class="w-full max-w-5xl h-[45vh] object-cover object-center rounded-2xl border border-white/10 opacity-70 hover:opacity-100 transition duration-700" 
+                     alt="Design Process">
+                <p class="font-mono text-xs text-gray-500 mt-4 text-center">FIG 2.0 INTERFACE DESIGN SYSTEM</p>
+            </div>
+        </section>
+
+        <section class="py-24 px-6 md:px-24 bg-transparent border-y border-white/10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+                
+                <div class="lg:col-span-3 space-y-10 border-r border-white/5 pr-4">
+                    <div class="reveal-stagger">
+                        <h3 class="font-mono text-xs text-gray-500 mb-2 uppercase tracking-widest">Client</h3>
+                        <p class="font-display text-lg">CyberDynamics</p>
+                    </div>
+                    <div class="reveal-stagger">
+                        <h3 class="font-mono text-xs text-gray-500 mb-2 uppercase tracking-widest">Role</h3>
+                        <p class="font-display text-lg">Lead Designer</p>
+                    </div>
+                    <div class="reveal-stagger">
+                        <h3 class="font-mono text-xs text-gray-500 mb-2 uppercase tracking-widest">Timeline</h3>
+                        <p class="font-display text-lg">4 Weeks</p>
+                    </div>
+                    <div class="pt-4 reveal-stagger">
+                        <a href="#" class="btn-skiper40 magnetic hover-trigger">
+                            <span class="btn-text">Live Site</span>
+                            <div class="btn-icon-container">
+                                <svg class="btn-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                                <svg class="btn-icon-clone w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 px-4">
+                    <span class="font-mono text-[#8e5864] mb-6 block tracking-widest reveal-up">THE EXECUTION</span>
+                    <h2 class="text-3xl font-display font-medium leading-tight mb-8 reveal-up">Executing the vision.</h2>
+                    <div class="text-gray-400 font-mono text-base leading-relaxed space-y-6 reveal-up">
+                        <p>We implemented a rigorous design-to-code workflow. By utilizing Tailwind CSS for styling and React Three Fiber for the 3D elements, we maintained a 1:1 fidelity with the original Figma prototypes.</p>
+                        <p>The result is a seamless dashboard that not only looks futuristic but performs with the reliability of enterprise software. Every pixel was calculated to ensure zero layout shifts during data streaming.</p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-4 pl-4 reveal-up flex flex-col items-start">
+                    <span class="font-mono text-[#8e5864] mb-6 block tracking-widest uppercase">The Stack</span>
+                    <div class="w-72 h-96 rounded-xl border border-white/10 bg-[#080808] relative overflow-hidden">
+                        <div class="scroll-fade-y w-full h-full overflow-y-auto p-4 space-y-2" data-lenis-prevent>
+                            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition cursor-default"><span class="font-mono text-[#8e5864] text-xs">01</span><span class="font-display font-bold">React.js</span></div>
+                            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition cursor-default"><span class="font-mono text-[#8e5864] text-xs">02</span><span class="font-display font-bold">Three.js / R3F</span></div>
+                            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition cursor-default"><span class="font-mono text-[#8e5864] text-xs">03</span><span class="font-display font-bold">GSAP ScrollTrigger</span></div>
+                            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition cursor-default"><span class="font-mono text-[#8e5864] text-xs">04</span><span class="font-display font-bold">Lenis Smooth Scroll</span></div>
+                            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition cursor-default"><span class="font-mono text-[#8e5864] text-xs">05</span><span class="font-display font-bold">Tailwind CSS</span></div>
+                            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition cursor-default"><span class="font-mono text-[#8e5864] text-xs">06</span><span class="font-display font-bold">WebGL Shaders</span></div>
+                            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition cursor-default"><span class="font-mono text-[#8e5864] text-xs">07</span><span class="font-display font-bold">Blender 3D</span></div>
+                            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition cursor-default"><span class="font-mono text-[#8e5864] text-xs">08</span><span class="font-display font-bold">Figma</span></div>
+                            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition cursor-default"><span class="font-mono text-[#8e5864] text-xs">09</span><span class="font-display font-bold">Node.js</span></div>
+                            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition cursor-default"><span class="font-mono text-[#8e5864] text-xs">10</span><span class="font-display font-bold">Vercel</span></div>
+                            <div class="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition cursor-default"><span class="font-mono text-[#8e5864] text-xs">11</span><span class="font-display font-bold">PostgreSQL</span></div>
+                            <div class="h-8"></div> 
+                        </div>
+                    </div>
+                    <p class="font-mono text-[10px] text-gray-600 mt-4 animate-pulse">SCROLL LIST</p>
+                </div>
+
+            </div>
+        </section>
+
+        <footer class="py-24 px-6 flex justify-center items-center bg-[#0a0a0a] border-t border-white/5">
+            <a href="project-2.html" class="block w-full max-w-lg group hover-trigger">
+                <div class="border border-white/10 rounded-2xl p-8 hover:bg-white/5 transition duration-500 relative overflow-hidden">
+                    <div class="flex justify-between items-start mb-8">
+                        <span class="font-mono text-xs text-[#8e5864] tracking-widest">NEXT CASE STUDY</span>
+                        <span class="text-2xl transition-transform duration-300 group-hover:-rotate-45 text-white">→</span>
+                    </div>
+                    <h2 class="text-4xl md:text-5xl font-display font-black text-white group-hover:translate-x-2 transition-transform duration-500">CYBER DUST</h2>
+                    <div class="absolute -right-20 -bottom-20 w-40 h-40 bg-[#8e5864] blur-[80px] rounded-full opacity-0 group-hover:opacity-30 transition duration-700"></div>
+                </div>
+            </a>
+        </footer>
+
+    </main>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        // --- GLOBAL PARALLAX SYSTEM ---
+        const parallaxElements = document.querySelectorAll("[data-speed]");
+        parallaxElements.forEach(el => {
+            const speed = parseFloat(el.getAttribute("data-speed"));
+            gsap.to(el, {
+                y: (i, target) => ScrollTrigger.maxScroll(window) * (1 - speed) * 0.1, 
+                ease: "none",
+                scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: 0 }
+            });
+        });
+
+        // --- HERO IMAGE ANIMATION (Straight Float) ---
+        const floatBox = document.querySelector(".hero-float-anim");
+        if(floatBox) {
+            // Constant Float
+            gsap.to(floatBox, {
+                y: -20,
+                duration: 3,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+
+            // Magnetic Parallax on Mouse Move
+            document.querySelector("header").addEventListener("mousemove", (e) => {
+                const x = (e.clientX / window.innerWidth - 0.5) * 30; // Move range
+                const y = (e.clientY / window.innerHeight - 0.5) * 30;
+                gsap.to(floatBox, { x: x, y: y, duration: 0.5, ease: "power2.out" });
+            });
+        }
+
+        // --- SCRAMBLE TEXT ---
+        const scrambleChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+        function scrambleText(element) {
+            const originalText = element.innerText;
+            let iterations = 0;
+            const interval = setInterval(() => {
+                element.innerText = originalText.split("").map((letter, index) => {
+                    if (index < iterations) return originalText[index];
+                    if (originalText[index] === " " || originalText[index] === "\n") return originalText[index];
+                    return scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+                }).join("");
+                if (iterations >= originalText.length) clearInterval(interval);
+                iterations += 1/2; 
+            }, 30);
+        }
+        document.querySelectorAll('.scramble-load').forEach(el => scrambleText(el));
+
+        // --- SMOOTH SCROLL ---
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+            smoothTouch: false,
+        });
+        function raf(time) { lenis.raf(time * 1000); }
+        gsap.ticker.add((time) => { lenis.raf(time * 1000); });
+        gsap.ticker.lagSmoothing(0);
+
+        // --- MOUSE BLOB ---
+        const blob = document.getElementById("blob");
+        if (blob) {
+            gsap.set(blob, { xPercent: -50, yPercent: -50 });
+            const xTo = gsap.quickTo(blob, "x", { duration: 0.6, ease: "power3" });
+            const yTo = gsap.quickTo(blob, "y", { duration: 0.6, ease: "power3" });
+            window.addEventListener("mousemove", (e) => { xTo(e.clientX); yTo(e.clientY); });
+        }
+
+        // --- CURSOR ---
+        const cursor = document.getElementById('cursor');
+        let cursorX = 0, cursorY = 0;
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+        gsap.ticker.add(() => {
+            cursorX += (mouseX - cursorX) * 0.15;
+            cursorY += (mouseY - cursorY) * 0.15;
+            cursor.style.left = `${cursorX}px`;
+            cursor.style.top = `${cursorY}px`;
+        });
+
+        // --- MAGNETIC BTNS ---
+        document.querySelectorAll('.magnetic').forEach(btn => {
+            btn.addEventListener('mousemove', (e) => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                gsap.to(btn, { x: x * 0.3, y: y * 0.3, duration: 0.3, ease: "power2.out" });
+            });
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, { x: 0, y: 0, duration: 1, ease: "elastic.out(1, 0.3)" });
+            });
+        });
+
+        // --- SCROLL ANIMATIONS ---
+        gsap.utils.toArray('.reveal-up').forEach(elem => {
+            gsap.fromTo(elem, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power3.out", scrollTrigger: { trigger: elem, start: "top 85%" } });
+        });
+        gsap.utils.toArray('.reveal-stagger').forEach(elem => {
+            gsap.fromTo(elem, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out", scrollTrigger: { trigger: elem, start: "top 90%" } });
+        });
+        gsap.utils.toArray('.reveal-img-scale').forEach(container => {
+            let img = container.querySelector("img");
+            gsap.fromTo(img, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.2, ease: "power3.out", scrollTrigger: { trigger: container, start: "top 80%" } });
+        });
+        gsap.from(".img-reveal", { clipPath: "inset(0 100% 0 0)", duration: 1.5, ease: "expo.out", delay: 0.5 });
+        // --- SKIPER89: SCROLL PROGRESS WIDGET (Lenis-safe + draggable) ---
+        (() => {
+        const widget = document.getElementById("scrollWidget");
+        const ring = document.getElementById("scrollWidgetRing");
+        const pctEl = document.getElementById("scrollWidgetPct");
+        if (!widget || !ring || !pctEl) return;
+
+        const r = 18;
+        const C = 2 * Math.PI * r;
+
+        ring.style.strokeDasharray = `${C}`;
+        ring.style.strokeDashoffset = `${C}`;
+
+        const clamp01 = (v) => Math.min(Math.max(v, 0), 1);
+
+        function getRealProgress() {
+            const doc = document.documentElement;
+            const body = document.body;
+
+            const scrollTop = doc.scrollTop || body.scrollTop || 0;
+            const scrollHeight = Math.max(doc.scrollHeight, body.scrollHeight);
+            const clientHeight = doc.clientHeight || window.innerHeight;
+
+            const maxScroll = Math.max(1, scrollHeight - clientHeight);
+            return clamp01(scrollTop / maxScroll);
+        }
+
+        // Smooth number change (so it feels like NumberFlow)
+        let displayed = 0;
+
+        function renderProgress(p) {
+            // ring
+            ring.style.strokeDashoffset = `${C * (1 - p)}`;
+
+            // percent (smoothed)
+            const target = Math.round(p * 100);
+            displayed += (target - displayed) * 0.22;
+            const out = Math.round(displayed);
+            pctEl.textContent = `${out}%`;
+        }
+
+        function update() {
+            renderProgress(getRealProgress());
+        }
+
+        // initial
+        update();
+
+        // Lenis hook (best)
+        if (window.lenis && typeof lenis.on === "function") {
+            lenis.on("scroll", update);
+        }
+
+        // fallback hooks
+        window.addEventListener("scroll", update, { passive: true });
+        window.addEventListener("resize", update);
+
+        // --- draggable (pointer events) ---
+        let dragging = false;
+        let startX = 0, startY = 0;
+        let startRight = 16, startBottom = 16;
+
+        const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+        widget.addEventListener("pointerdown", (e) => {
+            dragging = true;
+            widget.setPointerCapture(e.pointerId);
+
+            const styles = getComputedStyle(widget);
+            startRight = parseFloat(styles.right) || 16;
+            startBottom = parseFloat(styles.bottom) || 16;
+
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+
+        widget.addEventListener("pointermove", (e) => {
+            if (!dragging) return;
+
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+
+            let nextRight = startRight - dx;
+            let nextBottom = startBottom - dy;
+
+            const w = widget.offsetWidth;
+            const h = widget.offsetHeight;
+
+            // keep it inside viewport with 8px padding
+            const maxRight = window.innerWidth - w;
+            const maxBottom = window.innerHeight - h;
+
+            nextRight = clamp(nextRight, 8, maxRight - 8);
+            nextBottom = clamp(nextBottom, 8, maxBottom - 8);
+
+            widget.style.right = `${nextRight}px`;
+            widget.style.bottom = `${nextBottom}px`;
+        });
+
+        const endDrag = () => { dragging = false; };
+        widget.addEventListener("pointerup", endDrag);
+        widget.addEventListener("pointercancel", endDrag);
+        })();
+        // =====================================================================
+        // SKIPER26 THEME TOGGLE (circle-blur, blur:on, start:center) - VANILLA
+        // =====================================================================
+        (() => {
+        const root = document.documentElement;
+        const btn = document.getElementById("themeToggle");
+        if (!btn) return;
+
+        const styleId = "theme-transition-styles";
+
+        // circle-blur SVG mask (center) — same concept as your React code
+        const circleBlurMaskSvg =
+            "data:image/svg+xml," +
+            encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+                <defs>
+                <filter id="blur"><feGaussianBlur stdDeviation="2"/></filter>
+                </defs>
+                <circle cx="20" cy="20" r="18" fill="white" filter="url(#blur)"/>
+            </svg>`,
+            );
+
+        function ensureStyle(css) {
+            let el = document.getElementById(styleId);
+            if (!el) {
+            el = document.createElement("style");
+            el.id = styleId;
+            document.head.appendChild(el);
+            }
+            el.textContent = css;
+        }
+
+        // variant: circle-blur | blur: on | start: center
+        function circleBlurCenterCSS() {
+            return `
+                ::view-transition-group(root) {
+                animation-timing-function: var(--expo-out);
+                }
+
+                ::view-transition-new(root) {
+                mask: url('${circleBlurMaskSvg}') center / 0 no-repeat;
+                -webkit-mask: url('${circleBlurMaskSvg}') center / 0 no-repeat;
+                mask-origin: content-box;
+                -webkit-mask-origin: content-box;
+                animation: skipper26-scale 650ms var(--expo-out);
+                transform-origin: center;
+                /* IMPORTANT: no persistent filter here */
+                }
+
+                ::view-transition-old(root),
+                .dark::view-transition-old(root) {
+                animation: skipper26-scale 650ms var(--expo-out);
+                transform-origin: center;
+                z-index: -1;
+                }
+
+                @keyframes skipper26-scale {
+                0%   { filter: blur(8px); }
+                35%  { filter: blur(3px); }
+                55%  { filter: blur(0px); }
+                100% {
+                    mask-size: 350vmax;
+                    -webkit-mask-size: 350vmax;
+                    filter: blur(0px);
+                }
+                }
+            `;
+            }
+
+        function applyTheme(theme) {
+            root.setAttribute("data-theme", theme);
+            btn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+            localStorage.setItem("theme", theme);
+        }
+
+        // init theme (saved -> system -> dark)
+        const saved = localStorage.getItem("theme");
+        if (saved === "light" || saved === "dark") {
+            applyTheme(saved);
+        } else {
+            const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+            applyTheme(prefersDark ? "dark" : "light");
+        }
+
+        function toggleTheme() {
+            const current = root.getAttribute("data-theme") || "dark";
+            const next = current === "dark" ? "light" : "dark";
+
+            // inject animation css each click (like Skiper26)
+            ensureStyle(circleBlurCenterCSS());
+
+            const switchTheme = () => applyTheme(next);
+
+            // ViewTransition if supported
+            if (document.startViewTransition) {
+            document.startViewTransition(switchTheme);
+            } else {
+            switchTheme();
+            }
+        }
+
+        btn.addEventListener("click", toggleTheme);
+        })();
+    </script>
+    
+</body>
+</html>
