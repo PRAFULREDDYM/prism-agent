@@ -9,6 +9,8 @@
   ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝     ╚═╝    ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   
 ```
 
+![Prism Agent Demo](demo/prism-demo-optimized.gif)
+
 **The only AI coding agent that shows you exactly why it answered the way it did.**
 
 [![npm version](https://img.shields.io/npm/v/prism-agent.svg?style=flat-square&color=89b4fa)](https://www.npmjs.com/package/prism-agent)
@@ -20,6 +22,8 @@
 Prism Agent is a standalone terminal AI coding agent that makes the routing layer visible. The left pane shows a live knowledge graph that updates in real time as you work, showing exactly which domains activated and why.
 
 <div align="center">
+
+> The live terminal UI — knowledge graph on the left, conversation on the right.
 
 ```text
 ┌─ PRISM AGENT ──────────────────────────────────────────────────┐

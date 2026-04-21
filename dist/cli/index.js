@@ -151,6 +151,17 @@ const dryRunTest = async (prompt) => {
     console.log("");
     console.log((0, routing_1.formatRouteSummary)(route));
 };
+const listDomains = async () => {
+    dotenv_1.default.config();
+    const domains = (0, routing_1.getAvailableDomains)();
+    printBanner();
+    console.log("available domains:");
+    for (const domain of domains) {
+        console.log(`- ${domain.label}`);
+        console.log(`  related: ${domain.related.join(", ")}`);
+        console.log(`  keywords: ${domain.keywords.join(", ")}`);
+    }
+};
 const program = new commander_1.Command();
 program
     .name("prism-agent")
@@ -171,6 +182,12 @@ program
     .argument("<prompt>", "Prompt to analyze")
     .action(async (prompt) => {
     await dryRunTest(prompt);
+});
+program
+    .command("domains")
+    .description("List the routing domains available to Prism Agent.")
+    .action(async () => {
+    await listDomains();
 });
 program
     .command("history")

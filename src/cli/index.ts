@@ -5,7 +5,7 @@ import { resolve } from "path";
 import { Command } from "commander";
 import dotenv from "dotenv";
 import AgentCore from "../agent/AgentCore";
-import { analyzePrompt, formatRouteSummary } from "../agent/routing";
+import { analyzePrompt, formatRouteSummary, getAvailableDomains } from "../agent/routing";
 import { PrismClient } from "../agent/PrismClient";
 import SessionManager from "../session/SessionManager";
 import App from "../ui/App";
@@ -194,6 +194,21 @@ const dryRunTest = async (prompt: string): Promise<void> => {
   console.log(formatRouteSummary(route));
 };
 
+const listDomains = async (): Promise<void> => {
+  dotenv.config();
+
+  const domains = getAvailableDomains();
+
+  printBanner();
+  console.log("available domains:");
+
+  for (const domain of domains) {
+    console.log(`- ${domain.label}`);
+    console.log(`  related: ${domain.related.join(", ")}`);
+    console.log(`  keywords: ${domain.keywords.join(", ")}`);
+  }
+};
+
 const program = new Command();
 
 program
@@ -217,6 +232,13 @@ program
   .argument("<prompt>", "Prompt to analyze")
   .action(async (prompt: string) => {
     await dryRunTest(prompt);
+  });
+
+program
+  .command("domains")
+  .description("List the routing domains available to Prism Agent.")
+  .action(async () => {
+    await listDomains();
   });
 
 program

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatRouteSummary = exports.analyzePrompt = exports.detectIntent = void 0;
+exports.getAvailableDomains = exports.formatRouteSummary = exports.analyzePrompt = exports.detectIntent = void 0;
 const DOMAIN_DEFINITIONS = [
     {
         id: "security",
@@ -188,3 +188,10 @@ const formatRouteSummary = (analysis, suppressedDomains = []) => {
     return `intent: ${analysis.intent}  domains: ${visibleDomains || "general"}  tokens_in: ${analysis.tokensIn}  saved: ${analysis.saved}  filler: ${analysis.fillerRemoved}`;
 };
 exports.formatRouteSummary = formatRouteSummary;
+const getAvailableDomains = () => DOMAIN_DEFINITIONS.map((definition) => ({
+    id: definition.id,
+    label: definition.label,
+    keywords: [...definition.keywords],
+    related: [...definition.related]
+}));
+exports.getAvailableDomains = getAvailableDomains;

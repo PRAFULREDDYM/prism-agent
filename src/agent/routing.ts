@@ -84,6 +84,13 @@ const DOMAIN_DEFINITIONS: DomainDefinition[] = [
   }
 ];
 
+export interface AvailableDomain {
+  id: string;
+  label: string;
+  keywords: string[];
+  related: string[];
+}
+
 const FILLER_WORDS = new Set([
   "a",
   "an",
@@ -222,3 +229,11 @@ export const formatRouteSummary = (analysis: RouteAnalysis, suppressedDomains: s
 
   return `intent: ${analysis.intent}  domains: ${visibleDomains || "general"}  tokens_in: ${analysis.tokensIn}  saved: ${analysis.saved}  filler: ${analysis.fillerRemoved}`;
 };
+
+export const getAvailableDomains = (): AvailableDomain[] =>
+  DOMAIN_DEFINITIONS.map((definition) => ({
+    id: definition.id,
+    label: definition.label,
+    keywords: [...definition.keywords],
+    related: [...definition.related]
+  }));
